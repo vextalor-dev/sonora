@@ -29,12 +29,11 @@ jobs:
           npm ci
           npm run build
 
-      - name: Setup Capacitor
+      - name: Sync web assets to Android
         working-directory: mobile
         run: |
           npm ci
-          npx cap add android
-          npx cap sync android
+          npx cap copy android
 
       - name: Setup Java
         uses: actions/setup-java@v4

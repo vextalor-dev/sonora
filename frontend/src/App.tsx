@@ -6,6 +6,7 @@ import { PlayerBar } from './components/PlayerBar';
 import { NowPlayingOverlay } from './components/NowPlaying';
 import { QueuePanel } from './components/QueuePanel';
 import { useAudioEngine } from './hooks/useAudioEngine';
+import { initMediaSession } from './mediaSession';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
@@ -70,6 +71,9 @@ function UnauthorizedGate() {
 
 export default function App() {
   useAudioEngine();
+  useEffect(() => {
+    initMediaSession();
+  }, []);
 
   return (
     <BrowserRouter>
