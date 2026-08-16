@@ -6,9 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.AudioAttributes;
-import android.media.AudioFocusRequest;
-import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.os.Build;
@@ -48,27 +45,8 @@ public class MediaSessionPlugin extends Plugin {
 
     private static final String TAG = "SonoraMedia";
 
-    private AudioManager audioManager;
-    private AudioFocusRequest focusRequest;
     private final ExecutorService artLoader = Executors.newSingleThreadExecutor();
     private volatile String artLoadingKey = "";
-
-    private final AudioManager.OnAudioFocusChangeListener focusListener = focus -> {
-        if (focus == AudioManager.AUDIOFOCUS_LOSS || focus == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            MediaSessionState.dispatch("pause", -1);
-        }
-    };
-
-    @Override
-    public void load() {
-        super.load();
-        try {
-            MediaSessionState.app = getContext().getApplicationContext();
-            audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-        } catch (Exception e) {
-            Log.e(TAG, "load failed", e);
-        }
-    }
 
     @Override
     protected void handleOnDestroy() {
@@ -171,10 +149,7 @@ public class MediaSessionPlugin extends Plugin {
             MediaSessionState.playing = playing;
             updatePlaybackState();
             if (playing) {
-                acquireFocus();
                 startServiceIfNeeded();
-            } else {
-                releaseFocus();
             }
             MediaSessionState.notifyNow(getContext());
             call.resolve();
@@ -282,51 +257,12 @@ public class MediaSessionPlugin extends Plugin {
         }
     }
 
-    private void acquireFocus() {
-        if (audioManager == null) {
-            return;
-        }
-        try {
-            if (Build.VERSION.SDK_INT >= 26) {
-                if (focusRequest == null) {
-                    focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(new AudioAttributes.Builder()
-                                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                                    .build())
-                            .setOnAudioFocusChangeListener(focusListener)
-                            .build();
-                }
-                audioManager.requestAudioFocus(focusRequest);
-            } else {
-                audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "audio focus request failed: " + e.getMessage());
-        }
-    }
-
-    private void releaseFocus() {
-        if (audioManager == null) {
-            return;
-        }
-        try {
-            if (Build.VERSION.SDK_INT >= 26 && focusRequest != null) {
-                audioManager.abandonAudioFocusRequest(focusRequest);
-            } else {
-                audioManager.abandonAudioFocus(focusListener);
-            }
-        } catch (Exception ignore) {
-        }
-    }
-
     private void stopMedia() {
         try {
             MediaSessionState.playing = false;
             if (MediaSessionState.session != null) {
                 MediaSessionState.session.setActive(false);
             }
-            releaseFocus();
             NotificationManager nm = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
             nm.cancel(MediaSessionService.NOTIF_ID);
             getContext().stopService(new Intent(getContext(), MediaSessionService.class));
