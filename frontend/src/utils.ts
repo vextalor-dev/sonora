@@ -1,7 +1,9 @@
+import { API_BASE } from './config';
+
 export function artUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   const parts = path.split('/');
-  const base = `/api/artwork/${encodeURIComponent(parts[parts.length - 1] || '')}`;
+  const base = `${API_BASE}/api/artwork/${encodeURIComponent(parts[parts.length - 1] || '')}`;
   const token = localStorage.getItem('sonora_token');
   return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }

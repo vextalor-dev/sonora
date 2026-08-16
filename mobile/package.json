@@ -1,0 +1,17 @@
+{
+  "name": "sonora-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Android shell for the Sonora music app (wraps the web UI in Capacitor)",
+  "scripts": {
+    "sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}

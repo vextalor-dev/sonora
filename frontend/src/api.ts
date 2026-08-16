@@ -1,4 +1,5 @@
 import type { Album, Artist, Like, Playlist, RecentlyPlayed, Song, User } from './types';
+import { API_BASE } from './config';
 
 const TOKEN_KEY = 'sonora_token';
 const USER_KEY = 'sonora_user';
@@ -39,7 +40,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (options.body && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(`/api${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}/api${path}`, { ...options, headers });
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
@@ -77,7 +78,7 @@ export const songApi = {
   play: (id: string) => api<{ ok: boolean }>(`/songs/${id}/play`, { method: 'POST' }),
   streamUrl: (id: string) => {
     const token = getToken();
-    return `/api/songs/${id}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    return `${API_BASE}/api/songs/${id}/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   },
 };
 
@@ -112,7 +113,7 @@ export const adminApi = {
   uploadAudio: (file: File, onProgress?: (pct: number) => void) =>
     new Promise<{ stagingId: string; originalName: string; size: number; duration: number; meta: { title: string; artist: string; album: string; genre: string; trackNumber: number | null } }>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/admin/songs/upload');
+      xhr.open('POST', `${API_BASE}/api/admin/songs/upload`);
       if (getToken()) xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`);
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -141,7 +142,7 @@ export const adminApi = {
   replaceAudio: (id: string, file: File, onProgress?: (pct: number) => void) =>
     new Promise<{ song: Song }>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `/api/admin/songs/${id}/audio`);
+      xhr.open('POST', `${API_BASE}/api/admin/songs/${id}/audio`);
       if (getToken()) xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`);
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));

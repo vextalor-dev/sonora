@@ -36,6 +36,11 @@ export function HomePage() {
 
   return (
     <div className="flex flex-col gap-10">
+      <section className="animate-card">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Welcome back</h1>
+        <p className="mt-1.5 text-sm text-muted">Here is what is happening on your server.</p>
+      </section>
+
       <section>
         <SectionTitle icon={<Clock className="h-5 w-5" />} label="Recently Played" />
         {data.recentlyPlayed.length === 0 ? (

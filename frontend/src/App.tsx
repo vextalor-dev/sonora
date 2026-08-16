@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { getToken, getUser } from './api';
 import { Layout } from './components/Layout';
 import { PlayerBar } from './components/PlayerBar';
@@ -54,17 +54,26 @@ function AppRoutes() {
   );
 }
 
+function UnauthorizedGate() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const onUnauthorized = () => {
+      if (pathname === '/login') return;
+      navigate('/login', { replace: true });
+    };
+    window.addEventListener('sonora:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('sonora:unauthorized', onUnauthorized);
+  }, [pathname, navigate]);
+  return null;
+}
+
 export default function App() {
   useAudioEngine();
 
-  useEffect(() => {
-    const onUnauthorized = () => window.location.replace('/login');
-    window.addEventListener('sonora:unauthorized', onUnauthorized);
-    return () => window.removeEventListener('sonora:unauthorized', onUnauthorized);
-  }, []);
-
   return (
     <BrowserRouter>
+      <UnauthorizedGate />
       <ScrollToTop />
       <AppRoutes />
       <PlayerBar />

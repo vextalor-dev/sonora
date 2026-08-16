@@ -1,3 +1,5 @@
+import { API_BASE } from './config';
+
 export interface Artist {
   id: string;
   name: string;
@@ -78,7 +80,7 @@ export interface User {
 export function artworkUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   const token = localStorage.getItem('sonora_token');
-  return `/api/artwork/${encodeURIComponent(path.split('/').pop() || '')}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  return `${API_BASE}/api/artwork/${encodeURIComponent(path.split('/').pop() || '')}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 }
 
 export function formatDuration(sec: number): string {

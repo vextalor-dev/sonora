@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, ListPlus, Plus, Pause, Play } from 'lucide-react';
 import type { Song } from '../types';
 import { usePlayer } from '../store';
-import { libraryApi } from '../api';
+import { libraryApi, getToken } from '../api';
 import { artUrl, fmtDuration } from '../utils';
 import { LazyArtwork } from './ui';
 import { usePlaylists } from '../hooks/usePlaylists';
@@ -10,6 +10,7 @@ import { usePlaylists } from '../hooks/usePlaylists';
 export function useLikedIds() {
   const [liked, setLiked] = useState<Set<string>>(new Set());
   useEffect(() => {
+    if (!getToken()) return;
     libraryApi.likes().then((r) => setLiked(new Set(r.likes.map((l) => l.songId)))).catch(() => {});
   }, []);
   const toggle = async (songId: string) => {

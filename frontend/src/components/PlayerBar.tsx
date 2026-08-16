@@ -71,7 +71,7 @@ export function PlayerBar() {
           </button>
           <button
             onClick={() => toggle()}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-txt text-bg transition-transform hover:scale-105"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent2 text-[#0b0b10] shadow-[0_0_20px_rgba(139,92,246,0.45)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(139,92,246,0.7)]"
             aria-label={status === 'playing' ? 'Pause' : 'Play'}
           >
             {status === 'playing' ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}

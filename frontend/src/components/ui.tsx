@@ -10,8 +10,8 @@ export function LazyArtwork({ song, className = '', rounded = true }: { song: Pi
       {url && !failed ? (
         <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-surface2 to-bg">
-          <span className="text-[10px] font-bold tracking-widest text-muted/40">SONORA</span>
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#191926] via-surface2 to-bg">
+          <span className="text-[10px] font-bold tracking-widest text-accent/50">SONORA</span>
         </div>
       )}
     </div>
