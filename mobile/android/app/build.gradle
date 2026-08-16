@@ -3,6 +3,14 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.sonora.app"
     compileSdk rootProject.ext.compileSdkVersion
+    signingConfigs {
+        debug {
+            storeFile file('sonora-debug.keystore')
+            storePassword 'sonora-dev'
+            keyAlias 'sonora'
+            keyPassword 'sonora-dev'
+        }
+    }
     defaultConfig {
         applicationId "com.sonora.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -17,6 +25,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
