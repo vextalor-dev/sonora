@@ -34,6 +34,11 @@ import java.util.concurrent.Executors;
  * The web layer is the source of truth for audio; native buttons are forwarded
  * to the web as "action" events and the web reports state back through
  * setMetadata / setPlayback / reportProgress.
+ *
+ * Robustness rules:
+ *  - the MediaSession is created and marked active in init() and stays active
+ *    until stop(), so the system always knows this app is a media player
+ *  - every call is guarded so a single failure never kills the chain
  */
 @CapacitorPlugin(
         name = "MediaSession",
@@ -57,8 +62,12 @@ public class MediaSessionPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        MediaSessionState.app = getContext().getApplicationContext();
-        audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        try {
+            MediaSessionState.app = getContext().getApplicationContext();
+            audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        } catch (Exception e) {
+            Log.e(TAG, "load failed", e);
+        }
     }
 
     @Override
@@ -69,116 +78,140 @@ public class MediaSessionPlugin extends Plugin {
 
     @PluginMethod
     public void init(PluginCall call) {
-        Context c = getContext();
-        MediaSessionState.ensureChannel(c);
-        if (MediaSessionState.session == null) {
-            MediaSession session = new MediaSession(c, "SonoraPlayback");
-            session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            session.setCallback(new MediaSession.Callback() {
-                @Override
-                public void onPlay() {
-                    MediaSessionState.dispatch("play", -1);
-                }
+        try {
+            Context c = getContext();
+            MediaSessionState.ensureChannel(c);
 
-                @Override
-                public void onPause() {
-                    MediaSessionState.dispatch("pause", -1);
-                }
+            if (MediaSessionState.session == null) {
+                MediaSession session = new MediaSession(c, "SonoraPlayback");
+                session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+                session.setCallback(new MediaSession.Callback() {
+                    @Override
+                    public void onPlay() {
+                        MediaSessionState.dispatch("play", -1);
+                    }
 
-                @Override
-                public void onSkipToNext() {
-                    MediaSessionState.dispatch("next", -1);
-                }
+                    @Override
+                    public void onPause() {
+                        MediaSessionState.dispatch("pause", -1);
+                    }
 
-                @Override
-                public void onSkipToPrevious() {
-                    MediaSessionState.dispatch("prev", -1);
-                }
+                    @Override
+                    public void onSkipToNext() {
+                        MediaSessionState.dispatch("next", -1);
+                    }
 
-                @Override
-                public void onSeekTo(long posMs) {
-                    MediaSessionState.dispatch("seek", posMs / 1000);
+                    @Override
+                    public void onSkipToPrevious() {
+                        MediaSessionState.dispatch("prev", -1);
+                    }
+
+                    @Override
+                    public void onSeekTo(long posMs) {
+                        MediaSessionState.dispatch("seek", posMs / 1000);
+                    }
+                });
+                MediaSessionState.session = session;
+            }
+
+            // Active for the whole app lifetime — the system can always show controls.
+            MediaSessionState.session.setActive(true);
+            updatePlaybackState();
+
+            MediaSessionState.handler = (action, value) -> {
+                if ("close".equals(action)) {
+                    stopMedia();
+                    return;
                 }
-            });
-            MediaSessionState.session = session;
+                JSObject data = new JSObject();
+                data.put("action", action);
+                if (value >= 0) {
+                    data.put("value", value);
+                }
+                notifyListeners("action", data);
+            };
+
+            call.resolve();
+        } catch (Throwable t) {
+            Log.e(TAG, "init failed", t);
+            call.reject("init failed: " + t.getMessage());
         }
-        MediaSessionState.handler = (action, value) -> {
-            if ("close".equals(action)) {
-                stopMedia();
-                return;
-            }
-            JSObject data = new JSObject();
-            data.put("action", action);
-            if (value >= 0) {
-                data.put("value", value);
-            }
-            notifyListeners("action", data);
-        };
-        call.resolve();
     }
 
     @PluginMethod
     public void setMetadata(PluginCall call) {
-        String title = call.getString("title", "");
-        String artist = call.getString("artist", "");
-        String artUrl = call.getString("artUrl", "");
-        long duration = Math.max(0, call.getLong("duration", 0L));
+        try {
+            String title = call.getString("title", "");
+            String artist = call.getString("artist", "");
+            String artUrl = call.getString("artUrl", "");
+            long duration = Math.max(0, call.getLong("duration", 0L));
 
-        MediaSessionState.title = title;
-        MediaSessionState.artist = artist;
-        MediaSessionState.duration = duration;
+            MediaSessionState.title = title;
+            MediaSessionState.artist = artist;
+            MediaSessionState.duration = duration;
 
-        loadArtwork(artUrl, () -> {
+            loadArtwork(artUrl, () -> {
+                applyArtwork();
+                MediaSessionState.notifyNow(getContext());
+            });
             applyArtwork();
+            updatePlaybackState();
             MediaSessionState.notifyNow(getContext());
-        });
-        applyArtwork();
-        updatePlaybackState();
-        MediaSessionState.notifyNow(getContext());
-        call.resolve();
+            call.resolve();
+        } catch (Throwable t) {
+            Log.e(TAG, "setMetadata failed", t);
+            call.reject("setMetadata failed: " + t.getMessage());
+        }
     }
 
     @PluginMethod
     public void setPlayback(PluginCall call) {
-        boolean playing = Boolean.TRUE.equals(call.getBoolean("playing"));
-        MediaSessionState.playing = playing;
-        if (playing && !MediaSessionState.title.isEmpty()) {
-            startServiceIfNeeded();
-        }
-        updatePlaybackState();
-        if (playing) {
-            acquireFocus();
-            if (MediaSessionState.session != null) {
-                MediaSessionState.session.setActive(true);
+        try {
+            boolean playing = Boolean.TRUE.equals(call.getBoolean("playing"));
+            MediaSessionState.playing = playing;
+            updatePlaybackState();
+            if (playing) {
+                acquireFocus();
+                startServiceIfNeeded();
+            } else {
+                releaseFocus();
             }
-        } else {
-            releaseFocus();
-            if (MediaSessionState.session != null) {
-                MediaSessionState.session.setActive(false);
-            }
+            MediaSessionState.notifyNow(getContext());
+            call.resolve();
+        } catch (Throwable t) {
+            Log.e(TAG, "setPlayback failed", t);
+            call.resolve();
         }
-        MediaSessionState.notifyNow(getContext());
-        call.resolve();
     }
 
     @PluginMethod
     public void reportProgress(PluginCall call) {
-        Long pos = call.getLong("position");
-        Long dur = call.getLong("duration");
-        if (pos != null && pos >= 0) {
-            MediaSessionState.position = pos;
+        try {
+            Long pos = call.getLong("position");
+            Long dur = call.getLong("duration");
+            if (pos != null && pos >= 0) {
+                MediaSessionState.position = pos;
+            }
+            if (dur != null && dur > 0) {
+                MediaSessionState.duration = dur;
+            }
+            updatePlaybackState();
+            call.resolve();
+        } catch (Throwable t) {
+            Log.e(TAG, "reportProgress failed", t);
+            call.resolve();
         }
-        if (dur != null && dur > 0) {
-            MediaSessionState.duration = dur;
-        }
-        updatePlaybackState();
-        call.resolve();
     }
 
     @PluginMethod
     public void stop(PluginCall call) {
-        stopMedia();
-        call.resolve();
+        try {
+            stopMedia();
+            call.resolve();
+        } catch (Throwable t) {
+            Log.e(TAG, "stop failed", t);
+            call.resolve();
+        }
     }
 
     private void applyArtwork() {
@@ -237,10 +270,15 @@ public class MediaSessionPlugin extends Plugin {
     private void startServiceIfNeeded() {
         Context c = getContext();
         Intent i = new Intent(c, MediaSessionService.class);
-        if (Build.VERSION.SDK_INT >= 26) {
-            c.startForegroundService(i);
-        } else {
-            c.startService(i);
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                c.startForegroundService(i);
+            } else {
+                c.startService(i);
+            }
+        } catch (Throwable t) {
+            Log.e(TAG, "foreground service start failed; falling back to plain notification", t);
+            MediaSessionState.notifyNow(c);
         }
     }
 
@@ -283,12 +321,12 @@ public class MediaSessionPlugin extends Plugin {
     }
 
     private void stopMedia() {
-        MediaSessionState.playing = false;
-        if (MediaSessionState.session != null) {
-            MediaSessionState.session.setActive(false);
-        }
-        releaseFocus();
         try {
+            MediaSessionState.playing = false;
+            if (MediaSessionState.session != null) {
+                MediaSessionState.session.setActive(false);
+            }
+            releaseFocus();
             NotificationManager nm = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
             nm.cancel(MediaSessionService.NOTIF_ID);
             getContext().stopService(new Intent(getContext(), MediaSessionService.class));

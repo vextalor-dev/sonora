@@ -162,6 +162,16 @@ div {
   overscroll-behavior-y: contain;
 }
 
+/* Touch devices: hide scrollbars entirely (app feel) */
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    scrollbar-width: none;
+  }
+}
+
 /* Safe areas (notch / gesture bar / Android 15 edge-to-edge) */
 .pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
