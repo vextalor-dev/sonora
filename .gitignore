@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+frontend/dist/
+backend/dist/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# database
+*.db
+*.db-journal
+backend/prisma/data/
+
+# uploaded media (may contain copyrighted audio/artwork)
+uploads/
+
+# logs & temp
+*.log
+sonora-err.log
+sonora-out.log
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

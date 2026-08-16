@@ -1,0 +1,9 @@
+node_modules/
+dist/
+data/
+*.db
+.env
+uploads/audio/*
+!uploads/audio/.gitkeep
+uploads/artwork/*
+!uploads/artwork/.gitkeep
