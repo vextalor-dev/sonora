@@ -7,6 +7,7 @@ import { SongRow } from '../components/SongRow';
 import { artUrl } from '../utils';
 import { EmptyState, LazyArtwork, Spinner } from '../components/ui';
 import { usePlayer } from '../store';
+import { msStatus } from '../mediaSession';
 
 function SectionTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
@@ -40,6 +41,13 @@ export function HomePage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Welcome back</h1>
         <p className="mt-1.5 text-sm text-muted">Here is what is happening on your server.</p>
       </section>
+
+      {msStatus.native ? (
+        <div className="animate-card flex items-center gap-2 rounded-lg border border-edge bg-surface/60 px-3 py-2 text-[11px] text-muted">
+          <span className={`h-1.5 w-1.5 rounded-full ${msStatus.step.startsWith('init') ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+          phone bridge: {msStatus.step} · {msStatus.perm || 'perm:?'} · {msStatus.detail.slice(0, 48) || '…'}
+        </div>
+      ) : null}
 
       <section>
         <SectionTitle icon={<Clock className="h-5 w-5" />} label="Recently Played" />
