@@ -1,0 +1,8 @@
+{
+  "appId": "com.sonora.app",
+  "appName": "Sonora",
+  "webDir": "../frontend/dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}
