@@ -72,7 +72,10 @@ export function useAudioEngine() {
       }
     };
     const onMeta = () => usePlayer.getState().setDuration(el.duration || 0);
-    const onPlay = () => usePlayer.getState().setStatus('playing');
+    const onPlay = () => {
+      if (navigator.vibrate) navigator.vibrate(8);
+      usePlayer.getState().setStatus('playing');
+    };
     const onPause = () => {
       const s = usePlayer.getState();
       if (s.status === 'loading' || s.status === 'playing') s.setStatus('paused');

@@ -122,3 +122,53 @@ input[type="range"]:disabled::-webkit-slider-thumb {
 .animate-glow {
   animation: sonora-pulse-glow 3.5s ease-in-out infinite;
 }
+
+/* ------------------------------------------------------------------ */
+/* Native app feel (WebView): no zoom, no text-selection callouts,    */
+/* no overscroll glow, no long-press image menus, safe-area insets.   */
+/* ------------------------------------------------------------------ */
+
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+img,
+button {
+  -webkit-user-drag: none;
+}
+
+/* Let inner panels scroll without chaining to the page */
+main,
+aside,
+div {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Safe areas (notch / gesture bar / Android 15 edge-to-edge) */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+.pb-safe-player {
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+}
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}

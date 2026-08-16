@@ -83,12 +83,12 @@ export function Sidebar() {
       )}
       <button
         onClick={() => setMobileOpen((v) => !v)}
-        className="fixed bottom-20 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-accent text-bg shadow-xl md:hidden"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-accent text-bg shadow-xl md:hidden"
         aria-label="Menu"
       >
         <ListMusic className="h-5 w-5" />
       </button>
-      <div className="fixed right-4 top-4 z-40 flex items-center gap-2 text-xs text-muted md:hidden">
+      <div className="pt-safe fixed right-4 top-4 z-40 flex items-center gap-2 text-xs text-muted md:hidden">
         <span className="rounded-full bg-surface/80 px-3 py-1.5 backdrop-blur">SONORA</span>
         <ChevronRight className="h-4 w-4" />
       </div>

@@ -1,29 +1,37 @@
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { usePlayer } from './store';
 import { artworkUrl } from './types';
 
-declare global {
-  interface Window {
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-      Plugins?: Record<string, { [k: string]: (...args: unknown[]) => Promise<unknown> }>;
-      addListener?: (event: string, cb: (data: never) => void) => Promise<unknown>;
-    };
-  }
-}
-
 interface NativeAction {
-  action?: string;
+  action: string;
   value?: number;
 }
 
-/** True inside the Capacitor WebView; false in a plain browser. */
-function native(): boolean {
-  return !!window.Capacitor?.Plugins?.MediaSession;
+interface SonoraMediaSession {
+  init(): Promise<void>;
+  setMetadata(options: { title: string; artist: string; artUrl: string; duration: number }): Promise<void>;
+  setPlayback(options: { playing: boolean }): Promise<void>;
+  reportProgress(options: { position: number; duration: number }): Promise<void>;
+  stop(): Promise<void>;
+  requestPermissions(): Promise<{ notifications: 'granted' | 'denied' | 'prompt' }>;
+  addListener(
+    eventName: 'action',
+    handler: (data: NativeAction) => void,
+  ): Promise<{ remove: () => void }>;
 }
 
-function send(method: string, data?: Record<string, unknown>): void {
+const mediaSession = registerPlugin<SonoraMediaSession>('MediaSession');
+
+function native(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+function send<T extends keyof SonoraMediaSession>(
+  method: T,
+  ...args: unknown[]
+): void {
   if (!native()) return;
-  void window.Capacitor!.Plugins!.MediaSession![method](data ?? {})
+  void (mediaSession[method] as (...a: unknown[]) => Promise<unknown>)(...args)
     .catch((err: unknown) => console.error('[sonora] media session call failed:', method, err));
 }
 
@@ -37,8 +45,8 @@ export function initMediaSession(): void {
 
   send('init');
 
-  void window.Capacitor?.addListener?.('action', (raw) => {
-    const d = raw as NativeAction;
+  void mediaSession.addListener('action', (d) => {
+    if (navigator.vibrate) navigator.vibrate(8);
     const s = usePlayer.getState();
     switch (d.action) {
       case 'toggle':
@@ -96,5 +104,5 @@ export function initMediaSession(): void {
     }
   });
 
-  void window.Capacitor?.Plugins?.MediaSession?.['requestPermissions']?.(undefined).catch(() => {});
+  void mediaSession.requestPermissions().catch(() => {});
 }

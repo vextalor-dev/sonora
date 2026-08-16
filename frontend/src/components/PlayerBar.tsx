@@ -35,7 +35,7 @@ export function PlayerBar() {
   const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   return (
-    <footer className="grid h-20 grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-edge bg-surface px-4">
+    <footer className="pb-safe grid h-20 items-center gap-4 border-t border-edge bg-surface px-4">
       {/* Left: track info */}
       <div
         className="flex min-w-0 cursor-pointer items-center gap-3"
