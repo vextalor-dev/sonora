@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" width="960" alt="Sonora">
+
 </p>
 
 <p align="center">
